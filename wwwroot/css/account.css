@@ -1,0 +1,21 @@
+﻿.account-countainer {
+    background-image:url("../images/accountBackground.jpg");
+    background-size:cover;
+    background-position:center;
+    background-repeat:repeat-y;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    min-height:100vh;
+    padding:2rem 0;
+}
+.account-box {
+    background-color:#fff;
+    border-radius:8px;
+    padding:30px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.7);
+    max-width:500px;
+    width:100%;
+    opacity:0.9;
+
+}

@@ -1,0 +1,52 @@
+﻿@using Microsoft.AspNetCore.Identity;
+@inject SignInManager<ApplicationUser> signInManager ;
+<ul class="navbar-nav ms-auto">
+        @if (signInManager.IsSignedIn(User))
+        {
+            <li class=" nav-item">
+            <span class="nav-link text-dark">@User.Identity.Name</span>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link text-dark" asp-controller="Account" asp-action="Logout">Logout</a>
+            </li>
+        }
+        else
+        {
+            <li class="nav-item" style="">
+                <a class="nav-link text-dark" asp-controller="Account" asp-action="Login">Login</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link text-dark" asp-controller="Account" asp-action="Register">Register</a>
+            </li>
+        }
+</ul>
+@*<style>
+    .nav-item a.nav-link:hover {
+        color: #007bff !important; 
+        transform: scale(1.05);
+        transition: 0.3s; 
+    }
+</style>*@
+
+<!--
+    Another Way without inject SignInManger
+-->
+@*
+<ul class="navbar-nav ms-auto">
+    @if (User.Identity.IsAuthenticated == true)
+    {
+        <li class="nav-item">
+            <a class="nav-link text-dark" asp-controller="Account" asp-action="Logout"></a>
+        </li>
+    }
+    else
+    {
+        <li class="nav-item">
+            <a class="nav-link text-dark" asp-controller="Account" asp-action="Login">Login</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link text-dark" asp-controller="Account" asp-action="Register">Register</a>
+        </li>
+    }
+</ul>
+*@
