@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using UserManagementSystem.Models;
+using UserManagementSystem.Services;
 using UserManagementSystem.ViewModels;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 
@@ -8,14 +9,14 @@ namespace UserManagementSystem.Controllers
 {
     public class AccountController : Controller
     {
-		private readonly SignInManager<ApplicationUser> _signInManager;
-		private readonly UserManager<ApplicationUser> _userManager;
+		private readonly IAuthService _authService;
+		private readonly IUserService _userService;
 
-		public AccountController(SignInManager<ApplicationUser> signInManager, UserManager<ApplicationUser> userManager)
+		public AccountController(IAuthService authService, IUserService userService)
         {
-			_signInManager = signInManager;
-            _userManager = userManager;
-		}
+            _authService = authService;
+            _userService = userService;
+        }
         public IActionResult Login()
         {
             return View();
@@ -24,20 +25,15 @@ namespace UserManagementSystem.Controllers
 		[ValidateAntiForgeryToken]
 		public async Task<IActionResult> Login(LoginViewModel loginModel)
         {
-            if (ModelState.IsValid)
-            {
-                var result = await _signInManager.PasswordSignInAsync(loginModel.Email, loginModel.Password,loginModel.RememberMe,false);
-                if (result.Succeeded)
-                {
-                   return RedirectToAction("Index", "Home");
-                }
-                else
-                {
-					ModelState.AddModelError("","Email Or Password is incoorect ! .");
-					return View(loginModel);
-				}
-            }
-            return View(loginModel);
+            if(!ModelState.IsValid)
+				return View(loginModel);
+
+            var result = await _authService.LoginAsync(loginModel);
+            if (result.Succeeded)
+                return RedirectToAction("Index", "Home");
+            
+			ModelState.AddModelError("","Email Or Password is incoorect ! .");
+			return View(loginModel);
         }
         public IActionResult Register()
         {
@@ -47,27 +43,15 @@ namespace UserManagementSystem.Controllers
 		[ValidateAntiForgeryToken]
 		public async Task<IActionResult> Register(RegisterViewModel registerModel)
         {
-            if(ModelState.IsValid)
-            {
-                ApplicationUser user = new ApplicationUser()
-                {
-                    FullName = registerModel.Name,
-                    Email = registerModel.Email,
-                    Address= registerModel.Address,
-                    UserName = registerModel.Email,
-                };
-
-                var result = await _userManager.CreateAsync(user,registerModel.Password);
-                if (result.Succeeded)
-                {
-                    return RedirectToAction("Login", "Account");
-                }else
-                {
-					AddErrors(result);
-					return View(registerModel);
-                }
-            }
-            return View(registerModel);
+            if (!ModelState.IsValid)
+                return View(registerModel);
+            var result = await _authService.RegisterAsync(registerModel);
+       
+            if (result.Succeeded)
+                return RedirectToAction("Login", "Account");
+       
+			AddErrors(result);
+			return View(registerModel);         
         }     
         public IActionResult VerifyEmail()
         {
@@ -79,7 +63,7 @@ namespace UserManagementSystem.Controllers
         {
             if (ModelState.IsValid)
             {
-                var user = await _userManager.FindByEmailAsync(verifyEmailModel.Email);
+                var user = await _userService.FindUserByEmailAsync(verifyEmailModel.Email);
                 if (user == null)
                 {
                     ModelState.AddModelError("", "Email is incoorect ! .");
@@ -108,20 +92,20 @@ namespace UserManagementSystem.Controllers
 			{
 				return View(model);
 			}
-			var user = await _userManager.FindByEmailAsync(model.Email);
+			var user = await _userService.FindUserByEmailAsync(model.Email);
             if(user == null)
             {
 				ModelState.AddModelError("", "Email Not Found!");
 				return View(model);
 			}
 
-            var removeResult = await _userManager.RemovePasswordAsync(user);
+            var removeResult = await _authService.RemovePasswordAsync(user);
             if (!removeResult.Succeeded)
             {
                 AddErrors(removeResult);
                 return View(model);
             }
-			var addResult = await _userManager.AddPasswordAsync(user, model.NewPassword);
+			var addResult = await _authService.AddPasswordAsync(user, model.NewPassword);
             if (!addResult.Succeeded)
             {
 				AddErrors(removeResult);
@@ -131,9 +115,8 @@ namespace UserManagementSystem.Controllers
         }
         public async Task<IActionResult> Logout()
         {
-            await _signInManager.SignOutAsync();
+            await _authService.LogoutAsync();
             return RedirectToAction("Index", "Home");
-
         }
 
         private void AddErrors (IdentityResult result)

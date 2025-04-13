@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using UserManagementSystem.Data;
 using UserManagementSystem.Models;
+using UserManagementSystem.Services;
 
 namespace UserManagementSystem
 {
@@ -29,7 +30,8 @@ namespace UserManagementSystem
 
             }).AddEntityFrameworkStores<AppDbContext>()
                .AddDefaultTokenProviders();
-            
+            builder.Services.AddScoped<IAuthService, AuthService>();
+            builder.Services.AddScoped<IUserService, UserService>();
             var app = builder.Build();
 
             // Configure the HTTP request pipeline.
