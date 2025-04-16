@@ -11,12 +11,14 @@ namespace UserManagementSystem.Controllers
     {
 		private readonly IAuthService _authService;
 		private readonly IUserService _userService;
+		private readonly IJwtService _jwtService;
 
-		public AccountController(IAuthService authService, IUserService userService)
+		public AccountController(IAuthService authService, IUserService userService ,IJwtService jwtService)
         {
             _authService = authService;
             _userService = userService;
-        }
+			_jwtService = jwtService;
+		}
         public IActionResult Login()
         {
             return View();
@@ -28,12 +30,23 @@ namespace UserManagementSystem.Controllers
             if(!ModelState.IsValid)
 				return View(loginModel);
 
-            var result = await _authService.LoginAsync(loginModel);
-            if (result.Succeeded)
-                return RedirectToAction("Index", "Home");
-            
-			ModelState.AddModelError("","Email Or Password is incoorect ! .");
-			return View(loginModel);
+            var result = await _authService.AuthenticateAsync(loginModel);
+			if (!result.Succeeded)
+			{
+				foreach (var error in result.Errors)
+				{
+					ModelState.AddModelError(string.Empty, error);
+				}
+				return View(loginModel);
+			}
+            //store the token in cookie
+            Response.Cookies.Append("JwtToken",_jwtService.WriteToken(result.Token),new CookieOptions
+            {
+                HttpOnly=true,
+                Secure=true,
+                Expires=loginModel.RememberMe ? result.Token.ValidTo :null
+            });
+            return RedirectToAction("Index", "Home");
         }
         public IActionResult Register()
         {
@@ -115,7 +128,8 @@ namespace UserManagementSystem.Controllers
         }
         public async Task<IActionResult> Logout()
         {
-            await _authService.LogoutAsync();
+            //await _authService.LogoutAsync();
+            Response.Cookies.Delete("JwtToken");
             return RedirectToAction("Index", "Home");
         }
 

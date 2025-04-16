@@ -14,5 +14,8 @@ namespace UserManagementSystem.Services
 		public async Task<ApplicationUser> FindUserByEmailAsync(string email)
 				=> await _userManager.FindByEmailAsync(email);
 
+		public async Task<ApplicationUser> FindUserByNameAsync(string name)
+				=> await _userManager.FindByNameAsync(name);
+
 	}
 }

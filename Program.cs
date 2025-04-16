@@ -1,5 +1,9 @@
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 using UserManagementSystem.Data;
 using UserManagementSystem.Models;
 using UserManagementSystem.Services;
@@ -32,6 +36,25 @@ namespace UserManagementSystem
                .AddDefaultTokenProviders();
             builder.Services.AddScoped<IAuthService, AuthService>();
             builder.Services.AddScoped<IUserService, UserService>();
+            builder.Services.AddScoped<IJwtService, JwtService>();
+            builder.Services.AddAuthentication(options =>
+            {
+                options.DefaultAuthenticateScheme=JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultChallengeScheme=JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultScheme=JwtBearerDefaults.AuthenticationScheme;
+            }).AddJwtBearer(options => {
+                options.SaveToken = true;
+                options.RequireHttpsMetadata = true;
+                options.TokenValidationParameters = new TokenValidationParameters() { 
+                    ValidateIssuer = true,
+                    ValidIssuer= "https://localhost:44367/",
+                    ValidAudience= "https://localhost:44367/",
+					IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("User1Mangement2System3@Version2!")),
+
+			    };
+
+			});
+            
             var app = builder.Build();
 
             // Configure the HTTP request pipeline.
@@ -46,8 +69,18 @@ namespace UserManagementSystem
             app.UseStaticFiles();
 
             app.UseRouting();
-
-            app.UseAuthorization();
+			
+            app.Use(async (context, next) =>
+			{
+				var token = context.Request.Cookies["JwtToken"];
+				if (!string.IsNullOrEmpty(token))
+				{
+					context.Request.Headers.Add("Authorization", $"Bearer {token}");
+				}
+				await next();
+			});
+			app.UseAuthentication();
+			app.UseAuthorization();
 
             app.MapControllerRoute(
                 name: "default",
